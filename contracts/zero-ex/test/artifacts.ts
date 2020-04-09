@@ -7,11 +7,13 @@ import { ContractArtifact } from 'ethereum-types';
 
 import * as AllowanceTarget from '../test/generated-artifacts/AllowanceTarget.json';
 import * as Bootstrap from '../test/generated-artifacts/Bootstrap.json';
+import * as FillQuoteTransformer from '../test/generated-artifacts/FillQuoteTransformer.json';
 import * as FixinCommon from '../test/generated-artifacts/FixinCommon.json';
 import * as FullMigration from '../test/generated-artifacts/FullMigration.json';
 import * as IAllowanceTarget from '../test/generated-artifacts/IAllowanceTarget.json';
 import * as IBootstrap from '../test/generated-artifacts/IBootstrap.json';
 import * as IERC20Transformer from '../test/generated-artifacts/IERC20Transformer.json';
+import * as IExchange from '../test/generated-artifacts/IExchange.json';
 import * as IFeature from '../test/generated-artifacts/IFeature.json';
 import * as InitialMigration from '../test/generated-artifacts/InitialMigration.json';
 import * as IOwnable from '../test/generated-artifacts/IOwnable.json';
@@ -37,8 +39,11 @@ import * as LibTokenSpenderStorage from '../test/generated-artifacts/LibTokenSpe
 import * as LibTransformERC20RichErrors from '../test/generated-artifacts/LibTransformERC20RichErrors.json';
 import * as LibTransformERC20Storage from '../test/generated-artifacts/LibTransformERC20Storage.json';
 import * as Ownable from '../test/generated-artifacts/Ownable.json';
+import * as PayTakerTransformer from '../test/generated-artifacts/PayTakerTransformer.json';
 import * as Puppet from '../test/generated-artifacts/Puppet.json';
 import * as SimpleFunctionRegistry from '../test/generated-artifacts/SimpleFunctionRegistry.json';
+import * as TestFillQuoteTransformerExchange from '../test/generated-artifacts/TestFillQuoteTransformerExchange.json';
+import * as TestFillQuoteTransformerHost from '../test/generated-artifacts/TestFillQuoteTransformerHost.json';
 import * as TestFullMigration from '../test/generated-artifacts/TestFullMigration.json';
 import * as TestInitialMigration from '../test/generated-artifacts/TestInitialMigration.json';
 import * as TestMigrator from '../test/generated-artifacts/TestMigrator.json';
@@ -50,9 +55,13 @@ import * as TestSimpleFunctionRegistryFeatureImpl2 from '../test/generated-artif
 import * as TestTokenSpender from '../test/generated-artifacts/TestTokenSpender.json';
 import * as TestTokenSpenderERC20Token from '../test/generated-artifacts/TestTokenSpenderERC20Token.json';
 import * as TestTransformERC20 from '../test/generated-artifacts/TestTransformERC20.json';
+import * as TestTransformerHost from '../test/generated-artifacts/TestTransformerHost.json';
+import * as TestWeth from '../test/generated-artifacts/TestWeth.json';
+import * as TestWethTransformerHost from '../test/generated-artifacts/TestWethTransformerHost.json';
 import * as TestZeroExFeature from '../test/generated-artifacts/TestZeroExFeature.json';
 import * as TokenSpender from '../test/generated-artifacts/TokenSpender.json';
 import * as TransformERC20 from '../test/generated-artifacts/TransformERC20.json';
+import * as WethTransformer from '../test/generated-artifacts/WethTransformer.json';
 import * as ZeroEx from '../test/generated-artifacts/ZeroEx.json';
 export const artifacts = {
     ZeroEx: ZeroEx as ContractArtifact,
@@ -89,9 +98,15 @@ export const artifacts = {
     LibStorage: LibStorage as ContractArtifact,
     LibTokenSpenderStorage: LibTokenSpenderStorage as ContractArtifact,
     LibTransformERC20Storage: LibTransformERC20Storage as ContractArtifact,
+    FillQuoteTransformer: FillQuoteTransformer as ContractArtifact,
     IERC20Transformer: IERC20Transformer as ContractArtifact,
     LibERC20Transformer: LibERC20Transformer as ContractArtifact,
+    PayTakerTransformer: PayTakerTransformer as ContractArtifact,
+    WethTransformer: WethTransformer as ContractArtifact,
+    IExchange: IExchange as ContractArtifact,
     ITestSimpleFunctionRegistryFeature: ITestSimpleFunctionRegistryFeature as ContractArtifact,
+    TestFillQuoteTransformerExchange: TestFillQuoteTransformerExchange as ContractArtifact,
+    TestFillQuoteTransformerHost: TestFillQuoteTransformerHost as ContractArtifact,
     TestFullMigration: TestFullMigration as ContractArtifact,
     TestInitialMigration: TestInitialMigration as ContractArtifact,
     TestMigrator: TestMigrator as ContractArtifact,
@@ -103,5 +118,8 @@ export const artifacts = {
     TestTokenSpender: TestTokenSpender as ContractArtifact,
     TestTokenSpenderERC20Token: TestTokenSpenderERC20Token as ContractArtifact,
     TestTransformERC20: TestTransformERC20 as ContractArtifact,
+    TestTransformerHost: TestTransformerHost as ContractArtifact,
+    TestWeth: TestWeth as ContractArtifact,
+    TestWethTransformerHost: TestWethTransformerHost as ContractArtifact,
     TestZeroExFeature: TestZeroExFeature as ContractArtifact,
 };

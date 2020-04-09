@@ -11,6 +11,7 @@ import {
 import { hexUtils, ZeroExRevertErrors } from '@0x/utils';
 import * as ethjs from 'ethereumjs-util';
 
+import { ETH_TOKEN_ADDRESS } from '../../src/constants';
 import { artifacts } from '../artifacts';
 import { abis } from '../utils/abis';
 import { fullMigrateAsync } from '../utils/migration';
@@ -197,8 +198,6 @@ blockchainTests.resets('TransformERC20 feature', env => {
                 TestMintTokenERC20TransformerEvents.MintTransform,
             );
         });
-
-        const ETH_TOKEN_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
         it("succeeds if taker's output token balance increases by exactly minOutputTokenAmount, with ETH", async () => {
             const startingInputTokenBalance = getRandomInteger(0, '100e18');
