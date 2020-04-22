@@ -33,7 +33,8 @@ export class MarketOperationUtils {
         private readonly _sampler: DexOrderSampler,
         private readonly contractAddresses: ContractAddresses,
         private readonly _orderDomain: OrderDomain,
-        private readonly _liquidityProviderRegistry: string = NULL_ADDRESS,
+        private readonly _liquidityProviderRegistry?: string,
+        private readonly _multiBridgeRegistry?: string,
     ) {
         this._wethAddress = contractAddresses.etherToken.toLowerCase();
     }
@@ -60,6 +61,7 @@ export class MarketOperationUtils {
         const [
             orderFillableAmounts,
             liquidityProviderAddress,
+            multiBridgeAddress,
             ethToMakerAssetRate,
             dexQuotes,
         ] = await this._sampler.executeAsync(
@@ -67,29 +69,45 @@ export class MarketOperationUtils {
             DexOrderSampler.ops.getOrderFillableTakerAmounts(nativeOrders),
             // Get the custom liquidity provider from registry.
             DexOrderSampler.ops.getLiquidityProviderFromRegistry(
-                this._liquidityProviderRegistry,
+                this._liquidityProviderRegistry || NULL_ADDRESS,
+                makerToken,
+                takerToken,
+            ),
+            // Get the MultiBridge address from registry.
+            DexOrderSampler.ops.getLiquidityProviderFromRegistry(
+                this._multiBridgeRegistry || NULL_ADDRESS,
                 makerToken,
                 takerToken,
             ),
             // Get ETH -> maker token price.
             DexOrderSampler.ops.getMedianSellRate(
-                difference(FEE_QUOTE_SOURCES, _opts.excludedSources).concat(
-                    this._liquidityProviderSourceIfAvailable(_opts.excludedSources),
+                difference(
+                    FEE_QUOTE_SOURCES.concat(
+                        this._liquidityProviderRegistry ? [ERC20BridgeSource.LiquidityProvider] : [],
+                        this._multiBridgeRegistry ? [ERC20BridgeSource.MultiBridge] : [],
+                    ),
+                    _opts.excludedSources,
                 ),
                 makerToken,
                 this._wethAddress,
                 ONE_ETHER,
                 this._liquidityProviderRegistry,
+                this._multiBridgeRegistry,
             ),
             // Get sell quotes for taker -> maker.
             DexOrderSampler.ops.getSellQuotes(
-                difference(SELL_SOURCES, _opts.excludedSources).concat(
-                    this._liquidityProviderSourceIfAvailable(_opts.excludedSources),
+                difference(
+                    SELL_SOURCES.concat(
+                        this._liquidityProviderRegistry ? [ERC20BridgeSource.LiquidityProvider] : [],
+                        this._multiBridgeRegistry ? [ERC20BridgeSource.MultiBridge] : [],
+                    ),
+                    _opts.excludedSources,
                 ),
                 makerToken,
                 takerToken,
                 getSampleAmounts(takerAmount, _opts.numSamples, _opts.sampleDistributionBase),
                 this._liquidityProviderRegistry,
+                this._multiBridgeRegistry,
             ),
         );
         return this._generateOptimizedOrders({
@@ -97,6 +115,7 @@ export class MarketOperationUtils {
             nativeOrders,
             dexQuotes,
             liquidityProviderAddress,
+            multiBridgeAddress,
             inputToken: takerToken,
             outputToken: makerToken,
             side: MarketOperation.Sell,
@@ -133,6 +152,7 @@ export class MarketOperationUtils {
         const [
             orderFillableAmounts,
             liquidityProviderAddress,
+            multiBridgeAddress,
             ethToTakerAssetRate,
             dexQuotes,
         ] = await this._sampler.executeAsync(
@@ -140,29 +160,45 @@ export class MarketOperationUtils {
             DexOrderSampler.ops.getOrderFillableMakerAmounts(nativeOrders),
             // Get the custom liquidity provider from registry.
             DexOrderSampler.ops.getLiquidityProviderFromRegistry(
-                this._liquidityProviderRegistry,
+                this._liquidityProviderRegistry || NULL_ADDRESS,
+                makerToken,
+                takerToken,
+            ),
+            // Get the MultiBridge address from registry.
+            DexOrderSampler.ops.getLiquidityProviderFromRegistry(
+                this._multiBridgeRegistry || NULL_ADDRESS,
                 makerToken,
                 takerToken,
             ),
             // Get ETH -> taker token price.
             DexOrderSampler.ops.getMedianSellRate(
-                difference(FEE_QUOTE_SOURCES, _opts.excludedSources).concat(
-                    this._liquidityProviderSourceIfAvailable(_opts.excludedSources),
+                difference(
+                    FEE_QUOTE_SOURCES.concat(
+                        this._liquidityProviderRegistry ? [ERC20BridgeSource.LiquidityProvider] : [],
+                        this._multiBridgeRegistry ? [ERC20BridgeSource.MultiBridge] : [],
+                    ),
+                    _opts.excludedSources,
                 ),
                 takerToken,
                 this._wethAddress,
                 ONE_ETHER,
                 this._liquidityProviderRegistry,
+                this._multiBridgeRegistry,
             ),
             // Get buy quotes for taker -> maker.
             DexOrderSampler.ops.getBuyQuotes(
-                difference(BUY_SOURCES, _opts.excludedSources).concat(
-                    this._liquidityProviderSourceIfAvailable(_opts.excludedSources),
+                difference(
+                    BUY_SOURCES.concat(
+                        this._liquidityProviderRegistry ? [ERC20BridgeSource.LiquidityProvider] : [],
+                        this._multiBridgeRegistry ? [ERC20BridgeSource.MultiBridge] : [],
+                    ),
+                    _opts.excludedSources,
                 ),
                 makerToken,
                 takerToken,
                 getSampleAmounts(makerAmount, _opts.numSamples, _opts.sampleDistributionBase),
                 this._liquidityProviderRegistry,
+                this._multiBridgeRegistry,
             ),
         );
 
@@ -171,6 +207,7 @@ export class MarketOperationUtils {
             nativeOrders,
             dexQuotes,
             liquidityProviderAddress,
+            multiBridgeAddress,
             inputToken: makerToken,
             outputToken: takerToken,
             side: MarketOperation.Buy,
@@ -283,6 +320,7 @@ export class MarketOperationUtils {
         allowFallback?: boolean;
         shouldBatchBridgeOrders?: boolean;
         liquidityProviderAddress?: string;
+        multiBridgeAddress?: string;
     }): OptimizedMarketOrder[] {
         const { inputToken, outputToken, side, inputAmount } = opts;
         const maxFallbackSlippage = opts.maxFallbackSlippage || 0;
@@ -331,15 +369,9 @@ export class MarketOperationUtils {
             contractAddresses: this.contractAddresses,
             bridgeSlippage: opts.bridgeSlippage || 0,
             liquidityProviderAddress: opts.liquidityProviderAddress,
+            multiBridgeAddress: opts.multiBridgeAddress,
             shouldBatchBridgeOrders: !!opts.shouldBatchBridgeOrders,
         });
-    }
-
-    private _liquidityProviderSourceIfAvailable(excludedSources: ERC20BridgeSource[]): ERC20BridgeSource[] {
-        return this._liquidityProviderRegistry !== NULL_ADDRESS &&
-            !excludedSources.includes(ERC20BridgeSource.LiquidityProvider)
-            ? [ERC20BridgeSource.LiquidityProvider]
-            : [];
     }
 }
 

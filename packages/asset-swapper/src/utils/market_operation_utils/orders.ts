@@ -140,6 +140,7 @@ export interface CreateOrderFromPathOpts {
     bridgeSlippage: number;
     shouldBatchBridgeOrders: boolean;
     liquidityProviderAddress?: string;
+    multiBridgeAddress?: string;
 }
 
 // Convert sell fills into orders.
@@ -152,19 +153,10 @@ export function createOrdersFromPath(path: Fill[], opts: CreateOrderFromPathOpts
             ++i;
             continue;
         }
-        // Liquidity Provider must be called by ERC20BridgeProxy
-        if (collapsedPath[i].source === ERC20BridgeSource.LiquidityProvider) {
-            orders.push(createBridgeOrder(collapsedPath[i], opts));
-            ++i;
-            continue;
-        }
         // If there are contiguous bridge orders, we can batch them together.
         const contiguousBridgeFills = [collapsedPath[i]];
         for (let j = i + 1; j < collapsedPath.length; ++j) {
-            if (
-                collapsedPath[j].source === ERC20BridgeSource.Native ||
-                collapsedPath[j].source === ERC20BridgeSource.LiquidityProvider
-            ) {
+            if (collapsedPath[j].source === ERC20BridgeSource.Native) {
                 break;
             }
             contiguousBridgeFills.push(collapsedPath[j]);
@@ -199,6 +191,11 @@ function getBridgeAddressFromSource(source: ERC20BridgeSource, opts: CreateOrder
                 throw new Error('Cannot create a LiquidityProvider order without a LiquidityProvider pool address.');
             }
             return opts.liquidityProviderAddress;
+        case ERC20BridgeSource.MultiBridge:
+            if (opts.multiBridgeAddress === undefined) {
+                throw new Error('Cannot create a MultiBridge order without a MultiBridge address.');
+            }
+            return opts.multiBridgeAddress;
         default:
             break;
     }

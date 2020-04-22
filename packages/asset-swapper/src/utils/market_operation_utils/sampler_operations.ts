@@ -99,7 +99,7 @@ export const samplerOperations = {
         };
     },
     getLiquidityProviderSellQuotes(
-        liquidityProviderRegistryAddress: string,
+        registryAddress: string,
         makerToken: string,
         takerToken: string,
         takerFillAmounts: BigNumber[],
@@ -107,12 +107,7 @@ export const samplerOperations = {
         return {
             encodeCall: contract => {
                 return contract
-                    .sampleSellsFromLiquidityProviderRegistry(
-                        liquidityProviderRegistryAddress,
-                        takerToken,
-                        makerToken,
-                        takerFillAmounts,
-                    )
+                    .sampleSellsFromLiquidityProviderRegistry(registryAddress, takerToken, makerToken, takerFillAmounts)
                     .getABIEncodedTransactionData();
             },
             handleCallResultsAsync: async (contract, callResults) => {
@@ -124,7 +119,7 @@ export const samplerOperations = {
         };
     },
     getLiquidityProviderBuyQuotes(
-        liquidityProviderRegistryAddress: string,
+        registryAddress: string,
         makerToken: string,
         takerToken: string,
         makerFillAmounts: BigNumber[],
@@ -134,7 +129,7 @@ export const samplerOperations = {
             encodeCall: contract => {
                 return contract
                     .sampleBuysFromLiquidityProviderRegistry(
-                        liquidityProviderRegistryAddress,
+                        registryAddress,
                         takerToken,
                         makerToken,
                         makerFillAmounts,
@@ -231,7 +226,8 @@ export const samplerOperations = {
         makerToken: string,
         takerToken: string,
         takerFillAmount: BigNumber,
-        liquidityProviderRegistryAddress?: string | undefined,
+        liquidityProviderRegistryAddress?: string,
+        multiBridgeRegistryAddress?: string,
     ): BatchedOperation<BigNumber> {
         if (makerToken.toLowerCase() === takerToken.toLowerCase()) {
             return samplerOperations.constant(new BigNumber(1));
@@ -242,6 +238,7 @@ export const samplerOperations = {
             takerToken,
             [takerFillAmount],
             liquidityProviderRegistryAddress,
+            multiBridgeRegistryAddress,
         );
         return {
             encodeCall: contract => {
@@ -297,7 +294,8 @@ export const samplerOperations = {
         makerToken: string,
         takerToken: string,
         takerFillAmounts: BigNumber[],
-        liquidityProviderRegistryAddress?: string | undefined,
+        liquidityProviderRegistryAddress?: string,
+        multiBridgeRegistryAddress?: string,
     ): BatchedOperation<DexSample[][]> {
         const subOps = sources
             .map(source => {
@@ -326,6 +324,16 @@ export const samplerOperations = {
                     }
                     batchedOperation = samplerOperations.getLiquidityProviderSellQuotes(
                         liquidityProviderRegistryAddress,
+                        makerToken,
+                        takerToken,
+                        takerFillAmounts,
+                    );
+                } else if (source === ERC20BridgeSource.MultiBridge) {
+                    if (multiBridgeRegistryAddress === undefined) {
+                        throw new Error('Cannot sample liquidity from MultiBridge if a registry is not provided.');
+                    }
+                    batchedOperation = samplerOperations.getLiquidityProviderSellQuotes(
+                        multiBridgeRegistryAddress,
                         makerToken,
                         takerToken,
                         takerFillAmounts,
@@ -366,7 +374,8 @@ export const samplerOperations = {
         makerToken: string,
         takerToken: string,
         makerFillAmounts: BigNumber[],
-        liquidityProviderRegistryAddress?: string | undefined,
+        liquidityProviderRegistryAddress?: string,
+        multiBridgeRegistryAddress?: string,
         fakeBuyOpts: FakeBuyOpts = DEFAULT_FAKE_BUY_OPTS,
     ): BatchedOperation<DexSample[][]> {
         const subOps = sources
@@ -401,6 +410,17 @@ export const samplerOperations = {
                     }
                     batchedOperation = samplerOperations.getLiquidityProviderBuyQuotes(
                         liquidityProviderRegistryAddress,
+                        makerToken,
+                        takerToken,
+                        makerFillAmounts,
+                        fakeBuyOpts,
+                    );
+                } else if (source === ERC20BridgeSource.MultiBridge) {
+                    if (multiBridgeRegistryAddress === undefined) {
+                        throw new Error('Cannot sample liquidity from MultiBridge if a registry is not provided.');
+                    }
+                    batchedOperation = samplerOperations.getLiquidityProviderBuyQuotes(
+                        multiBridgeRegistryAddress,
                         makerToken,
                         takerToken,
                         makerFillAmounts,

@@ -207,6 +207,76 @@ describe('DexSampler tests', () => {
             ]);
         });
 
+        it('getLiquidityProviderSellQuotes() (MultiBridge)', async () => {
+            const expectedMakerToken = randomAddress();
+            const expectedTakerToken = randomAddress();
+            const multiBridgeRegistry = randomAddress();
+
+            const sampler = new MockSamplerContract({
+                sampleSellsFromLiquidityProviderRegistry: (registryAddress, takerToken, makerToken, fillAmounts) => {
+                    expect(registryAddress).to.eq(multiBridgeRegistry);
+                    expect(takerToken).to.eq(expectedTakerToken);
+                    expect(makerToken).to.eq(expectedMakerToken);
+                    return [toBaseUnitAmount(1001)];
+                },
+            });
+            const dexOrderSampler = new DexOrderSampler(sampler);
+            const [result] = await dexOrderSampler.executeAsync(
+                DexOrderSampler.ops.getSellQuotes(
+                    [ERC20BridgeSource.MultiBridge],
+                    expectedMakerToken,
+                    expectedTakerToken,
+                    [toBaseUnitAmount(1000)],
+                    randomAddress(),
+                    multiBridgeRegistry,
+                ),
+            );
+            expect(result).to.deep.equal([
+                [
+                    {
+                        source: 'MultiBridge',
+                        output: toBaseUnitAmount(1001),
+                        input: toBaseUnitAmount(1000),
+                    },
+                ],
+            ]);
+        });
+
+        it('getLiquidityProviderBuyQuotes() (MultiBridge)', async () => {
+            const expectedMakerToken = randomAddress();
+            const expectedTakerToken = randomAddress();
+            const multiBridgeRegistry = randomAddress();
+
+            const sampler = new MockSamplerContract({
+                sampleBuysFromLiquidityProviderRegistry: (registryAddress, takerToken, makerToken, fillAmounts) => {
+                    expect(registryAddress).to.eq(multiBridgeRegistry);
+                    expect(takerToken).to.eq(expectedTakerToken);
+                    expect(makerToken).to.eq(expectedMakerToken);
+                    return [toBaseUnitAmount(999)];
+                },
+            });
+            const dexOrderSampler = new DexOrderSampler(sampler);
+            const [result] = await dexOrderSampler.executeAsync(
+                DexOrderSampler.ops.getBuyQuotes(
+                    [ERC20BridgeSource.MultiBridge],
+                    expectedMakerToken,
+                    expectedTakerToken,
+                    [toBaseUnitAmount(1000)],
+                    randomAddress(),
+                    multiBridgeRegistry,
+                ),
+            );
+            expect(result).to.deep.equal([
+                [
+                    {
+                        source: 'MultiBridge',
+                        output: toBaseUnitAmount(999),
+                        input: toBaseUnitAmount(1000),
+                    },
+                ],
+            ]);
+        });
+
         it('getEth2DaiSellQuotes()', async () => {
             const expectedTakerToken = randomAddress();
             const expectedMakerToken = randomAddress();

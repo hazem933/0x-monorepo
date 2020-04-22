@@ -27,6 +27,7 @@ describe('MarketOperationUtils tests', () => {
     const KYBER_BRIDGE_ADDRESS = contractAddresses.kyberBridge;
     const UNISWAP_BRIDGE_ADDRESS = contractAddresses.uniswapBridge;
     const CURVE_BRIDGE_ADDRESS = contractAddresses.curveBridge;
+    const DEX_FORWARDER_BRIDGE_ADDRESS = contractAddresses.dexForwarderBridge;
 
     const MAKER_TOKEN = randomAddress();
     const TAKER_TOKEN = randomAddress();
@@ -220,7 +221,9 @@ describe('MarketOperationUtils tests', () => {
         const fn = (registryAddress: string, takerToken: string, makerToken: string): string => {
             callArgs.makerToken = makerToken;
             callArgs.takerToken = takerToken;
-            callArgs.registryAddress = registryAddress;
+            if (registryAddress !== constants.NULL_ADDRESS) {
+                callArgs.registryAddress = registryAddress;
+            }
             return liquidityProviderAddress;
         };
         return [callArgs, fn];
@@ -480,6 +483,41 @@ describe('MarketOperationUtils tests', () => {
                 }
             });
 
+            it('MultiBridge is exclusive against Uniswap and LiquidityProvider', async () => {
+                const rates: RatesBySource = {};
+                rates[ERC20BridgeSource.Native] = [0.3, 0.2, 0.1, 0.05];
+                rates[ERC20BridgeSource.Uniswap] = [0.5, 0.05, 0.05, 0.05];
+                rates[ERC20BridgeSource.LiquidityProvider] = [0.6, 0.05, 0.05, 0.05];
+                rates[ERC20BridgeSource.MultiBridge] = [0.4, 0.05, 0.05, 0.05];
+                replaceSamplerOps({
+                    getSellQuotes: createGetMultipleSellQuotesOperationFromRates(rates),
+                });
+
+                const newMarketOperationUtils = new MarketOperationUtils(
+                    MOCK_SAMPLER,
+                    contractAddresses,
+                    ORDER_DOMAIN,
+                    randomAddress(),
+                    randomAddress(), // Supply a MultiBridge registry address
+                );
+                const excludedSources = DEFAULT_OPTS.excludedSources.concat(
+                    ERC20BridgeSource.Kyber,
+                    ERC20BridgeSource.Eth2Dai,
+                );
+                const improvedOrders = await newMarketOperationUtils.getMarketSellOrdersAsync(
+                    createOrdersFromSellRates(FILL_AMOUNT, rates[ERC20BridgeSource.Native]),
+                    FILL_AMOUNT,
+                    { ...DEFAULT_OPTS, numSamples: 4, excludedSources },
+                );
+                const orderSources = improvedOrders.map(o => o.fills[0].source);
+                if (orderSources.includes(ERC20BridgeSource.MultiBridge)) {
+                    expect(orderSources).to.not.include(ERC20BridgeSource.Uniswap);
+                    expect(orderSources).to.not.include(ERC20BridgeSource.LiquidityProvider);
+                } else {
+                    expect(orderSources).to.not.include(ERC20BridgeSource.MultiBridge);
+                }
+            });
+
             const ETH_TO_MAKER_RATE = 1.5;
 
             it('factors in fees for native orders', async () => {
@@ -662,14 +700,14 @@ describe('MarketOperationUtils tests', () => {
                     { excludedSources: SELL_SOURCES, numSamples: 4, bridgeSlippage: 0 },
                 );
                 expect(result.length).to.eql(1);
-                expect(result[0].makerAddress).to.eql(liquidityProviderAddress);
+                expect(result[0].makerAddress).to.eql(DEX_FORWARDER_BRIDGE_ADDRESS);
 
                 // tslint:disable-next-line:no-unnecessary-type-assertion
                 const decodedAssetData = assetDataUtils.decodeAssetDataOrThrow(
                     result[0].makerAssetData,
                 ) as ERC20BridgeAssetData;
                 expect(decodedAssetData.assetProxyId).to.eql(AssetProxyId.ERC20Bridge);
-                expect(decodedAssetData.bridgeAddress).to.eql(liquidityProviderAddress);
+                expect(decodedAssetData.bridgeAddress).to.eql(DEX_FORWARDER_BRIDGE_ADDRESS);
                 expect(result[0].takerAssetAmount).to.bignumber.eql(toSell);
                 expect(getSellQuotesParams.sources).contains(ERC20BridgeSource.LiquidityProvider);
                 expect(getSellQuotesParams.liquidityProviderAddress).is.eql(registryAddress);
