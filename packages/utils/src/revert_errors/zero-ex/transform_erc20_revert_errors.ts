@@ -49,11 +49,19 @@ export class ERC20TransformerFailedError extends RevertError {
     }
 }
 
+export class InvalidTransformDataError extends RevertError {
+    constructor(transformData?: string) {
+        super('InvalidTransformDataError', 'InvalidTransformDataError(bytes transformData)', {
+            transformData,
+        });
+    }
+}
+
 export class IncompleteFillSellQuoteError extends RevertError {
     constructor(sellToken?: string, soldAmount?: Numberish, sellAmount?: Numberish) {
         super(
             'IncompleteFillSellQuoteError',
-            'IncompleteFillSellQuoteError(address sellToken, address[] soldAmount, uint256[] sellAmount)',
+            'IncompleteFillSellQuoteError(address sellToken, uint256 soldAmount, uint256 sellAmount)',
             {
                 sellToken,
                 soldAmount,
@@ -67,7 +75,7 @@ export class IncompleteFillBuyQuoteError extends RevertError {
     constructor(buyToken?: string, boughtAmount?: Numberish, buyAmount?: Numberish) {
         super(
             'IncompleteFillBuyQuoteError',
-            'IncompleteFillBuyQuoteError(address buyToken, address[] boughtAmount, uint256[] buyAmount)',
+            'IncompleteFillBuyQuoteError(address buyToken, uint256 boughtAmount, uint256 buyAmount)',
             {
                 buyToken,
                 boughtAmount,
@@ -128,6 +136,14 @@ export class InvalidTokenReceivedError extends RevertError {
     }
 }
 
+export class InvalidTakerFeeTokenError extends RevertError {
+    constructor(token?: string) {
+        super('InvalidTakerFeeTokenError', 'InvalidTakerFeeTokenError(address token)', {
+            token,
+        });
+    }
+}
+
 const types = [
     InsufficientEthAttachedError,
     IncompleteERC20TransformError,
@@ -141,6 +157,8 @@ const types = [
     InvalidERC20AssetDataError,
     WrongNumberOfTokensReceivedError,
     InvalidTokenReceivedError,
+    InvalidTransformDataError,
+    InvalidTakerFeeTokenError,
 ];
 
 // Register the types we've defined.
